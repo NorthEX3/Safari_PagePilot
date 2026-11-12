@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PagePilot - AI for Safari",
   "short_name": "PagePilot",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "description": "A private, on-demand webpage AI assistant powered by your own OpenAI-compatible API key (DeepSeek by default).",
   "permissions": [
     "activeTab",
