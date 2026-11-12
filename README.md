@@ -12,9 +12,11 @@
 
 ![清空动效逐帧](docs/screenshots/clear-animation-frames.png)
 
-收起成边缘竖条、鼠标移上去滑出「‹」展开 /「×」退出：
+收起成边缘竖条，鼠标移上去滑出「‹」展开 /「×」退出（真实 Safari 截图）：
 
-![收起与展开](docs/screenshots/dock-collapse-expand.png)
+| 展开的对话框 | 点 ✕ 收成右边缘竖条 | 鼠标移上去滑出两个按钮 |
+|---|---|---|
+| ![展开的对话框](docs/screenshots/dock-open.png) | ![收起成竖条](docs/screenshots/dock-collapsed.png) | ![滑出展开和退出按钮](docs/screenshots/dock-hover.png) |
 
 ## 安装（下载 dmg）
 
