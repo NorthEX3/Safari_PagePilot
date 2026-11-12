@@ -14,3 +14,8 @@ tests/*.png
 xcuserdata/
 DerivedData/
 *.xcuserstate
+
+# Release build output (see scripts/release.sh)
+build/
+dist/
+*.dmg
