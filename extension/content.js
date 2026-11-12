@@ -175,16 +175,14 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
 .dock-grip{position:absolute;left:0;top:0;bottom:0;width:15px;display:grid;place-items:center;cursor:grab;touch-action:none;transition:opacity 120ms ease}
 .dock.dragging .dock-grip{cursor:grabbing}
 .dock.open .dock-grip{opacity:0;pointer-events:none}
-/* the thin blue bar (two 20px halves) bends into the "<" chevron when the dock opens: each half shortens and rotates about the middle */
-.dock-morph{position:absolute;left:12px;top:50%;width:20px;height:0;margin-top:0;pointer-events:none;transform:translateX(-14.5px);transition:transform 280ms cubic-bezier(.34,1.3,.64,1)}
-.dock-morph i{position:absolute;left:50%;width:3px;margin-left:-1.5px;height:20px;border-radius:2px;transition:transform 280ms cubic-bezier(.34,1.3,.64,1),height 280ms cubic-bezier(.34,1.3,.64,1),width 280ms ease,margin-left 280ms ease,background-color 200ms ease}
-.dock-morph .a{bottom:0;transform-origin:50% 100%;background:#8aaaf6}
-.dock-morph .b{top:0;transform-origin:50% 0;background:#6f98fa}
+/* one icon: a straight bar made of two overlapping round-capped strokes of the same colour; opening bends them about the middle into "<" */
+.dock-morph{position:absolute;left:2px;top:50%;width:40px;height:40px;margin-top:-20px;overflow:visible;pointer-events:none;transform:translateX(-14.5px);transition:transform 280ms cubic-bezier(.34,1.3,.64,1)}
+.dock-morph line{fill:none;stroke:#7aa0f8;stroke-width:3;stroke-linecap:round;stroke-dasharray:18.5 100;transform-origin:20px 20px;transition:transform 280ms cubic-bezier(.34,1.3,.64,1),stroke-dasharray 280ms cubic-bezier(.34,1.3,.64,1),stroke-width 280ms ease,stroke 200ms ease}
 .dock.open .dock-morph{transform:translateX(-4px)}
-.dock.open .dock-morph i{width:2.4px;margin-left:-1.2px;height:9.2px;background:#5b87eb}
+.dock.open .dock-morph line{stroke:#5b87eb;stroke-width:2.4;stroke-dasharray:9.2 100}
 .dock.open .dock-morph .a{transform:rotate(45deg)}
 .dock.open .dock-morph .b{transform:rotate(-45deg)}
-.dock.dragging .dock-morph,.dock.dragging .dock-morph i{transition:none}
+.dock.dragging .dock-morph,.dock.dragging .dock-morph line{transition:none}
 
 .dock-actions{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;place-items:center;opacity:0;transition:opacity 160ms ease 40ms}
 .dock-actions::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:.5px;background:#dcdcdc}   /* hairline divider (Smartisan: thin, light grey) */
@@ -199,7 +197,7 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
 .dock-btn.quit:hover,.dock-btn.quit:focus-visible{color:#fff;background:linear-gradient(180deg,#e5645a,#e55f55)}
 .dock-btn.quit:active{color:#fff;background:#df4f46}
 .dock.dragging .dock-btn{pointer-events:none}
-@media(prefers-reduced-motion:reduce){.dock,.dock-actions,.dock-btn,.dock-btn svg,.dock-morph,.dock-morph i{transition:none}}
+@media(prefers-reduced-motion:reduce){.dock,.dock-actions,.dock-btn,.dock-btn svg,.dock-morph,.dock-morph line{transition:none}}
 
 /* Settings page: slides in over the conversation (page-stack push, 300ms smooth) */
 .settings{position:absolute;left:0;right:0;top:48px;bottom:0;z-index:3;overflow-y:auto;padding:20px 12px 18px;background:repeating-linear-gradient(90deg,#f0f0f0 0 3.6px,#eee 3.6px 7.2px);transform:translateX(100%);visibility:hidden;transition:transform 300ms cubic-bezier(.37,0,.63,1),visibility 0s 300ms}
@@ -293,7 +291,7 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
 <div class="dock" id="dock" role="toolbar" aria-label="PagePilot 已收起" hidden>
   <div class="dock-body">
     <span class="dock-grip" id="dockGrip" aria-hidden="true"></span>
-    <span class="dock-morph" aria-hidden="true"><i class="a"></i><i class="b"></i></span>
+    <svg class="dock-morph" viewBox="0 0 40 40" aria-hidden="true"><line class="a" x1="20" y1="20" x2="20" y2="0"/><line class="b" x1="20" y1="20" x2="20" y2="40"/></svg>
     <div class="dock-actions">
       <button class="dock-btn" id="dockOpen" type="button" title="展开对话窗口" aria-label="展开对话窗口"></button>
       <button class="dock-btn quit" id="dockQuit" type="button" title="退出" aria-label="退出 PagePilot"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg></button>
