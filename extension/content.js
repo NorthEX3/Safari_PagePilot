@@ -1,11 +1,17 @@
 /* PagePilot content script. Injected only after the user explicitly opens PagePilot for the current tab.
    Visual language: Smartisan OS UI via lemonteaau/smartisan-ui-skill (https://github.com/lemonteaau/smartisan-ui-skill);
    Figma kit "Smartisan OS UI Kit (Unofficial)" by Paix Chan, CC BY 4.0 (https://www.figma.com/community/file/1419385240874679870).
-   Running the script a second time toggles the panel off. */
+   Running the script a second time toggles the panel (open -> closed, minimised -> restored). */
 (() => {
   const ID = "pagepilot-safari-root";
   const existing = document.getElementById(ID);
-  if (existing) { existing.remove(); return; }
+  if (existing) {
+    // the running instance owns the state: minimised -> bring the panel back, open -> close it
+    const toggle = new CustomEvent("pagepilot-toggle", { cancelable: true });
+    existing.dispatchEvent(toggle);
+    if (!toggle.defaultPrevented) existing.remove();   // nobody answered (e.g. a stale instance): just remove it
+    return;
+  }
   const ext = globalThis.browser ?? globalThis.chrome;
 
   /* ------------------------------------------------------------------ styles */
@@ -158,6 +164,34 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
 .fx-lid.back{background:linear-gradient(180deg,#d9d9d9,#bdbdbd);color:transparent}
 .fx-lid.back .icon{visibility:hidden}
 
+/* Minimised dock: a thin handle on the right edge of the page. Hover (or focus / tap) slides out two actions. */
+.dock{position:fixed;right:0;top:0;width:88px;height:136px;z-index:40;display:flex;align-items:stretch;pointer-events:auto;
+  transform:translateX(72px);transition:transform 200ms cubic-bezier(.37,0,.63,1);will-change:transform;
+  font-family:"Smartisan Compact","Inter",-apple-system,BlinkMacSystemFont,"Noto Sans CJK SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+.dock[hidden]{display:none}
+.dock.open{transform:translateX(0)}
+
+.dock-body{flex:1;position:relative;display:flex;align-items:stretch;background:linear-gradient(180deg,#fff,#f6f6f6);border:.8px solid #cfcfcf;border-right:0;border-radius:10px 0 0 10px;box-shadow:-3px 4px 14px rgba(0,0,0,.2);overflow:hidden}
+.dock-grip{position:absolute;left:0;top:0;bottom:0;width:15px;display:grid;place-items:center;cursor:grab;touch-action:none;transition:opacity 120ms ease}
+.dock.dragging .dock-grip{cursor:grabbing}
+.dock.open .dock-grip{opacity:0;pointer-events:none}
+.dock-grip::after{content:"";width:3px;height:40px;border-radius:2px;background:linear-gradient(180deg,#93b2f7,#6393ff)}
+
+.dock-actions{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;place-items:center;opacity:0;transition:opacity 160ms ease 40ms}
+.dock-actions::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:.5px;background:#dcdcdc}   /* hairline divider (Smartisan: thin, light grey) */
+.dock.open .dock-actions{opacity:1;transition-delay:60ms}
+.dock-body{touch-action:none;user-select:none;-webkit-user-select:none}
+.dock-btn{all:unset;box-sizing:border-box;cursor:pointer;width:100%;height:100%;display:grid;place-items:center;color:#5b87eb;transition:background-color 120ms ease,color 120ms ease}
+.dock-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform 220ms cubic-bezier(.34,1.7,.6,1)}
+.dock-btn:active svg{transform:scale(1.3)}
+.dock-btn:active{color:#3f68e2}
+.dock-btn:focus-visible{outline:2px solid #5b87eb;outline-offset:-3px}
+/* the quit half turns Smartisan red on hover: white cross on a red slab (#e5645a -> #e55f55) */
+.dock-btn.quit:hover,.dock-btn.quit:focus-visible{color:#fff;background:linear-gradient(180deg,#e5645a,#e55f55)}
+.dock-btn.quit:active{color:#fff;background:#df4f46}
+.dock.dragging .dock-btn{pointer-events:none}
+@media(prefers-reduced-motion:reduce){.dock,.dock-actions,.dock-btn,.dock-btn svg{transition:none}}
+
 /* Settings page: slides in over the conversation (page-stack push, 300ms smooth) */
 .settings{position:absolute;left:0;right:0;top:48px;bottom:0;z-index:3;overflow-y:auto;padding:20px 12px 18px;background:repeating-linear-gradient(90deg,#f0f0f0 0 3.6px,#eee 3.6px 7.2px);transform:translateX(100%);visibility:hidden;transition:transform 300ms cubic-bezier(.37,0,.63,1),visibility 0s 300ms}
 .settings.open{transform:none;visibility:visible;transition:transform 300ms cubic-bezier(.37,0,.63,1),visibility 0s}
@@ -214,7 +248,7 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
     <button class="bar-btn" id="clear" title="清除本页对话" aria-label="清除本页对话">${ICONS.clear}</button>
     <div class="title" id="bartitle">PagePilot</div>
     <div class="grow"></div>
-    <button class="bar-btn plain" id="close" title="关闭 (Esc)" aria-label="关闭侧边栏">${ICONS.close}</button>
+    <button class="bar-btn plain" id="close" title="收起（Esc 退出）" aria-label="收起到边缘">${ICONS.close}</button>
   </header>
   <div class="chips" id="chips"></div>
   <div class="chips-more" id="chipsMore" hidden></div>
@@ -246,7 +280,16 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
     <p class="status" id="status" role="status" aria-live="polite"></p>
   </section>
   <div class="grip" id="grip" role="separator" aria-orientation="vertical" aria-label="拖动调整宽度（←→ 键微调，双击恢复）" aria-valuemin="300" aria-valuemax="640" tabindex="0"></div>
-</section>`;
+</section>
+<div class="dock" id="dock" role="toolbar" aria-label="PagePilot 已收起" hidden>
+  <div class="dock-body">
+    <span class="dock-grip" id="dockGrip" aria-hidden="true"></span>
+    <div class="dock-actions">
+      <button class="dock-btn" id="dockOpen" type="button" title="展开对话窗口" aria-label="展开对话窗口"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 3.5 6 10l6.5 6.5"/></svg></button>
+      <button class="dock-btn quit" id="dockQuit" type="button" title="退出" aria-label="退出 PagePilot"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg></button>
+    </div>
+  </div>
+</div>`;
   document.documentElement.appendChild(host);
 
   const $ = selector => shadow.querySelector(selector);
@@ -1392,8 +1435,84 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
     else if (event.key === "Home") { applyWidth(DEFAULT_W); saveWidth(); event.preventDefault(); }
     event.stopPropagation();
   });
-  const onWindowResize = () => applyWidth(panelWidth);   // the half-of-page limit follows the window
+  const onWindowResize = () => { applyWidth(panelWidth); placeDock(); };   // the half-of-page limit follows the window
   window.addEventListener("resize", onWindowResize);
+
+  /* ------------------------------------------------------------------ minimise to a dock on the right edge */
+  const dock = $("#dock");
+  let minimized = false, dockTimer = 0;
+  const DOCK_EASE = "cubic-bezier(.37,0,.63,1)";
+  const openDock = () => { clearTimeout(dockTimer); dock.classList.add("open"); };
+  const closeDock = delay => { clearTimeout(dockTimer); dockTimer = setTimeout(() => dock.classList.remove("open"), delay); };
+  function minimize() {
+    if (minimized || fxRunning) return;
+    minimized = true;
+    collapseMore(true);
+    host.style.pointerEvents = "none";            // the page underneath is fully usable again
+    panel.inert = true;
+    dock.classList.remove("open");
+    dock.hidden = false;
+    if (typeof panel.animate === "function" && !REDUCED_MOTION()) {
+      const a = panel.animate([{ transform: "none", opacity: 1 }, { transform: "translateX(36px)", opacity: 0 }], { duration: 200, easing: DOCK_EASE, fill: "forwards" });
+      a.onfinish = () => { if (minimized) { panel.style.visibility = "hidden"; a.cancel(); } };
+      dock.animate([{ transform: "translateX(96px)" }, { transform: "translateX(72px)" }], { duration: 240, delay: 90, easing: DOCK_EASE, fill: "backwards" });
+    } else panel.style.visibility = "hidden";
+  }
+  function restore() {
+    if (!minimized) return;
+    minimized = false;
+    clearTimeout(dockTimer);
+    host.style.pointerEvents = "";
+    panel.style.visibility = ""; panel.inert = false;
+    dock.classList.remove("open");
+    if (typeof panel.animate === "function" && !REDUCED_MOTION()) {
+      panel.animate([{ transform: "translateX(36px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 220, easing: DOCK_EASE });
+      const a = dock.animate([{ transform: "translateX(72px)" }, { transform: "translateX(96px)" }], { duration: 180, easing: DOCK_EASE, fill: "forwards" });
+      a.onfinish = () => { if (!minimized) { dock.hidden = true; a.cancel(); } };
+    } else dock.hidden = true;
+    question.focus({ preventScroll: true });
+  }
+  dock.addEventListener("pointerenter", openDock);
+  dock.addEventListener("pointerleave", () => closeDock(280));
+  dock.addEventListener("focusin", openDock);
+  dock.addEventListener("focusout", event => { if (!dock.contains(event.relatedTarget)) closeDock(120); });
+  // the handle can be dragged up and down the edge; the position is remembered (as a fraction of the page height)
+  const DOCK_H = 136, DOCK_MARGIN = 8;
+  let dockY = 0.4, dockDrag = null;
+  const placeDock = () => { const top = Math.min(window.innerHeight - DOCK_H - DOCK_MARGIN, Math.max(DOCK_MARGIN, dockY * window.innerHeight - DOCK_H / 2)); dock.style.top = `${top}px`; return top; };
+  placeDock();
+  ext.storage.local.get(["dockY"]).then(d => { const v = Number(d && d.dockY); if (v > 0 && v < 1) { dockY = v; placeDock(); } }).catch(() => {});
+  const grip2 = $("#dockGrip"), dockBody = dock.querySelector(".dock-body");
+  // Press anywhere on the dock (buttons included) and move more than 4px = drag; press and release without moving = a normal
+  // click on whatever was under the pointer. The pointer is captured only once the drag starts, so clicks still reach the buttons.
+  dockBody.addEventListener("pointerdown", event => {
+    if (event.button !== 0) return;
+    const r = dock.getBoundingClientRect();
+    dockDrag = { id: event.pointerId, startY: event.clientY, offset: event.clientY - (r.top + r.height / 2), moved: false, onGrip: grip2.contains(event.target) || event.target === grip2 };
+    // follow the pointer on the window, so a fast drag that leaves the 136px-tall dock is not lost
+    window.addEventListener("pointermove", onDockMove, true); window.addEventListener("pointerup", endDockDrag, true); window.addEventListener("pointercancel", endDockDrag, true);
+  });
+  const onDockMove = event => {
+    if (!dockDrag || event.pointerId !== dockDrag.id) return;
+    if (!dockDrag.moved) {
+      if (Math.abs(event.clientY - dockDrag.startY) < 4) return;                       // a tap is not a drag
+      dockDrag.moved = true;
+      dock.classList.add("dragging");
+    }
+    dockY = (event.clientY - dockDrag.offset) / window.innerHeight;
+    dockY = (placeDock() + DOCK_H / 2) / window.innerHeight;                            // keep the clamped position
+  };
+  const endDockDrag = event => {
+    if (!dockDrag || (event && event.pointerId !== dockDrag.id)) return;
+    const { moved, onGrip } = dockDrag; dockDrag = null;
+    window.removeEventListener("pointermove", onDockMove, true); window.removeEventListener("pointerup", endDockDrag, true); window.removeEventListener("pointercancel", endDockDrag, true);
+    dock.classList.remove("dragging");
+    if (moved) { try { ext.storage.local.set({ dockY }); } catch { /* ignore */ } }
+    else if (onGrip) (dock.classList.contains("open") ? closeDock(0) : openDock());   // touch: tap the handle to show the actions
+  };
+  $("#dockOpen").addEventListener("click", restore);
+  $("#dockQuit").addEventListener("click", () => close());
+  host.addEventListener("pagepilot-toggle", event => { event.preventDefault(); if (minimized) restore(); else close(); });
 
   /* ------------------------------------------------------------------ events */
   function close() {
@@ -1404,10 +1523,10 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
     document.removeEventListener("keydown", onKey, true);
     host.remove();
   }
-  const onKey = event => { if (event.key !== "Escape" || event.defaultPrevented) return; if (moreOpen) collapseMore(); else if (settingsOpen) closeSettings(); else close(); };
+  const onKey = event => { if (event.key !== "Escape" || event.defaultPrevented || minimized) return; if (moreOpen) collapseMore(); else if (settingsOpen) closeSettings(); else close(); };
   document.addEventListener("keydown", onKey, true);
 
-  $("#close").addEventListener("click", close);
+  $("#close").addEventListener("click", minimize);   // the cross tucks the panel away; the dock's own ✕ really quits
   $("#clear").addEventListener("click", () => {
     if (fxRunning) return;
     const hasMessages = !!chat.querySelector(".msg");
