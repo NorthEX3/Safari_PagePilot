@@ -1,4 +1,4 @@
-# PagePilot — Safari 网页 AI 助手（v0.2）
+# PagePilot — Safari 网页 AI 助手
 
 无需插件订阅，直接用你自己的 API Key 阅读当前网页并连续提问。界面遵循 Smartisan OS UI 风格（基于 [lemonteaau/smartisan-ui-skill](https://github.com/lemonteaau/smartisan-ui-skill)，详见文末致谢）。
 
@@ -114,10 +114,10 @@ scripts/release.sh patch      # 版本号 +0.0.1；也可用 minor / major / 具
 
 > 要求：支持 **临时网页扩展** 功能的新版 macOS Safari。此安装属于开发测试模式。
 
-1. 下载 `PagePilot-Extension.zip` 并解压，得到 `manifest.json` 所在的文件夹（也可以直接选 ZIP）。
+1. 下载或克隆本仓库，其中的 `extension/` 文件夹（里面有 `manifest.json`）就是要加载的扩展。
 2. 在 Safari → 设置 → 高级，启用「显示网页开发者功能」（旧版为显示开发菜单）。
 3. Safari → 设置 → 开发者，勾选 **允许未签名的扩展 / Allow unsigned extensions**。
-4. 仍在 **开发者** 标签页，点击 **添加临时扩展… / Add Temporary Extension…**，选中解压的文件夹或 ZIP。
+4. 仍在 **开发者** 标签页，点击 **添加临时扩展… / Add Temporary Extension…**，选中 `extension/` 文件夹。
 5. Safari → 设置 → 扩展，确保 PagePilot 已启用。
 6. 打开普通网页（例如技术文档或 GitHub），点击 Safari 工具栏中的 PagePilot 图标，右侧直接打开对话框（再点一次关闭）。首次使用会自动进入设置页。
 7. 在设置页选择接口服务，填入 **API Key**（如 https://platform.deepseek.com/ 创建的 Key），点「测试连接」确认后点「保存」。之后点对话框左上角的齿轮即可随时回到设置。
@@ -130,16 +130,17 @@ scripts/release.sh patch      # 版本号 +0.0.1；也可用 minor / major / 具
 
 ## 其他安装方法二：手动转换成 Xcode 工程（需要 Mac + Xcode）
 
-有 Xcode 的 Mac 上可将 `extension` 目录转换成 Xcode 工程：
+`scripts/release.sh` 做的就是这件事。想自己在 Xcode 里调试时，可手动执行：
 
 ```bash
-xcrun safari-web-extension-packager /path/to/PagePilot-Safari/extension \
+xcrun safari-web-extension-converter extension/ \
   --project-location ~/Desktop/PagePilot-Xcode \
   --app-name PagePilot \
-  --bundle-identifier com.example.pagepilot
+  --bundle-identifier com.example.pagepilot \
+  --macos-only
 ```
 
-在旧版本 Xcode 上，Apple 曾使用 `safari-web-extension-converter` 命令，参数可能有区别。生成工程后在 Xcode 中选择你的 Personal Team，Build & Run macOS App，再在 Safari → 设置 → 扩展中启用。**此 ZIP 不包含已编译、已签名的 .app**。
+生成工程后在 Xcode 中选择你的 Personal Team，Build & Run，再在 Safari → 设置 → 扩展中启用。较新的 Xcode 也提供同名参数的 `safari-web-extension-packager`。
 
 官方说明：https://developer.apple.com/documentation/safariservices/packaging-a-web-extension-for-safari
 
@@ -170,9 +171,13 @@ extension/
   content.js          点击工具栏图标时注入的右侧对话框，内含设置页（接口预设 / 地址 / 模型 / Key / 测试连接）
   icon*.png           工具栏和扩展图标
 docs/screenshots/   README 用到的界面截图
+design/             应用图标源文件（icon.svg）与 1024px 预览
+scripts/
+  release.sh          同步版本号 → 构建 → 打包 dmg / zip
 tests/
   test-background.js  后台逻辑离线测试
   test-ui.js          侧边栏 Chromium 测试
+  test-icons.js       图标清单检查
 ```
 
 ## 图标
