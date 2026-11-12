@@ -108,6 +108,10 @@ APP_PATH="$BUILD_DIR/derived/Build/Products/Release/${APP_NAME}.app"
 BUILT_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")
 [[ "$BUILT_VERSION" == "$VERSION" ]] || { echo "App 版本是 ${BUILT_VERSION}，应为 ${VERSION}"; exit 1; }
 
+# xcodebuild 会把构建目录里的 .app 登记到系统，Safari 会多出一个重复的扩展，这里注销掉
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister
+"$LSREGISTER" -u "$APP_PATH" >/dev/null 2>&1 || true
+
 # ---------- 4. 打包 dmg 和 zip ----------
 DMG_PATH="$DIST_DIR/${APP_NAME}-${VERSION}.dmg"
 ZIP_PATH="$DIST_DIR/${APP_NAME}-${VERSION}.zip"
