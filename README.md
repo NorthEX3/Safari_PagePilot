@@ -1,6 +1,6 @@
 # PagePilot — Safari 网页 AI 助手（v0.2）
 
-无需插件订阅，直接用你自己的 API Key 阅读当前网页并连续提问。界面遵循 Smartisan OS UI 风格（基于 [lemonteaau/smartisan-ui-skill](https://github.com/lemonteaau/smartisan-ui-skill)，详见文末致谢）（轻拟物、极细描边、内凹控件、单一蓝色强调色）。
+无需插件订阅，直接用你自己的 API Key 阅读当前网页并连续提问。界面遵循 Smartisan OS UI 风格（基于 [lemonteaau/smartisan-ui-skill](https://github.com/lemonteaau/smartisan-ui-skill)，详见文末致谢）。
 
 ## 界面预览
 
@@ -109,18 +109,6 @@ scripts/release.sh patch      # 版本号 +0.0.1；也可用 minor / major / 具
 - 网页正文超长时保留开头 15,000 + 结尾 5,000 字，并告知模型已省略中间内容（v0.1 只截开头）
 - 历史对话只保留问答本身，旧的网页快照不会重复发送，节省 token
 
-**修正**
-- v0.1 的模型名 `deepseek-flash` / `deepseek-v4-pro` 无法确认是官方 ID，现默认 `deepseek-chat`，可在设置页自行修改
-- 不再向非 DeepSeek 服务发送 DeepSeek 专有的 `thinking` 参数
-
-## 测试
-
-```bash
-node tests/test-background.js   # 后台：端点校验、SSE 解析、流式、错误映射、中止（离线）
-node tests/test-ui.js           # Chromium：面板注入、流式、Markdown/XSS、选中文字、停止、Esc
-```
-
-UI 测试需要 Playwright + Chromium。**尚未在真实 Safari 上验证**，权限弹窗、Service Worker 生命周期等行为需在 Mac 上实测。
 
 ## 其他安装方法一：Mac Safari 快速试用（不用 Xcode）
 
@@ -170,7 +158,6 @@ xcrun safari-web-extension-packager /path/to/PagePilot-Safari/extension \
 - 无法自动读取跨域 `iframe`、视频字幕、Canvas/WebGL、某些动态编辑器（包括 Scrimba 的嵌入式代码环境）；可选中真实文字后提问。
 - 仅发送网页文本，不截屏、也不会访问视频画面；不是自动浏览网站的 Agent。
 - 聊天记录仅保留在当前页面会话，关闭面板或刷新后消失。
-- 本工程在非 macOS 环境中完成静态代码和模拟接口测试，**未在真实 Safari/Xcode 里安装验证**；若遇到浏览器权限/兼容问题需在 Mac 上调试。
 - **ChatGPT Plus 订阅不能直接用作 OpenAI API Key**；使用 OpenAI 需单独创建 API Key 并按量计费。
 - 界面只有浅色主题（Smartisan OS 本身没有暗色模式）。
 
