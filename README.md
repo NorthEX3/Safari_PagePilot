@@ -12,6 +12,31 @@
 
 ![清空动效逐帧](docs/screenshots/clear-animation-frames.png)
 
+收起成边缘竖条、鼠标移上去滑出「‹」展开 /「×」退出：
+
+![收起与展开](docs/screenshots/dock-collapse-expand.png)
+
+## 安装（下载 dmg）
+
+1. 从 [GitHub Releases](https://github.com/NorthEX3/Safari_PagePilot/releases) 下载 `PagePilot-<版本>.dmg`，双击打开，把 **PagePilot** 拖到右侧的「应用程序」文件夹。
+2. 首次打开 `PagePilot.app` 若被 macOS 拦截：系统设置 → 隐私与安全性 → 点「仍要打开」。
+3. 打开 Safari → 设置 → 高级，勾选「在菜单栏中显示“开发”菜单」。
+4. 在菜单栏「开发」里勾选 **允许未签名的扩展**。
+5. Safari → 设置 → 扩展，勾选 PagePilot 启用。
+6. 打开任意网页，点工具栏的 PagePilot 图标；首次使用会进入设置页，填入你的 API Key。
+
+**注意：** 目前的安装包使用本地临时签名，没有经过 Apple Developer ID 签名和公证，所以 Safari **每次重启后都会重置「允许未签名的扩展」**，需要重新勾选一次（第 4 步）。更新版本时下载新的 dmg，把新的 PagePilot 拖进「应用程序」替换旧版，再重启 Safari。
+
+### 自己打包
+
+在装有 Xcode 的 Mac 上：
+
+```bash
+scripts/release.sh patch      # 版本号 +0.0.1；也可用 minor / major / 具体版本号 / --no-bump
+```
+
+脚本会同步 `extension/manifest.json` 的版本号，生成 Xcode 工程、构建 Release，并在 `dist/` 里产出 `PagePilot-<版本>.dmg` 和 `.zip`。`BUNDLE_ID` 默认是 `com.northex3.PagePilot`，发布后请不要再改；有开发者账号时可用 `SIGN_IDENTITY` 指定签名证书。
+
 ## v0.2 相比 v0.1 的变化
 
 **功能**
@@ -95,7 +120,7 @@ node tests/test-ui.js           # Chromium：面板注入、流式、Markdown/XS
 
 UI 测试需要 Playwright + Chromium。**尚未在真实 Safari 上验证**，权限弹窗、Service Worker 生命周期等行为需在 Mac 上实测。
 
-## 方法一：Mac Safari 快速试用（不用 Xcode）
+## 其他安装方法一：Mac Safari 快速试用（不用 Xcode）
 
 > 要求：支持 **临时网页扩展** 功能的新版 macOS Safari。此安装属于开发测试模式。
 
@@ -113,7 +138,7 @@ UI 测试需要 Playwright + Chromium。**尚未在真实 Safari 上验证**，�
 
 官方步骤：https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension
 
-## 方法二：打包成长期安装的 Mac 应用（需要 Mac + Xcode）
+## 其他安装方法二：手动转换成 Xcode 工程（需要 Mac + Xcode）
 
 有 Xcode 的 Mac 上可将 `extension` 目录转换成 Xcode 工程：
 
