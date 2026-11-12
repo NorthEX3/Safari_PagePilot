@@ -4,19 +4,33 @@
 
 ## 界面预览
 
-| 对话与设置 | 设置页 |
+选中网页上的文字，一键让 AI 解释：
+
+![选中文字后解释](docs/screenshots/demo-select-explain.png)
+
+问到代码时，会自动读取页面里的代码块和编辑器内容：
+
+![解释页面上的代码](docs/screenshots/demo-code.png)
+
+接口与快速提问都可以在设置页里改：
+
+| 接口与 API Key | 自定义快速提问 |
 |---|---|
-| ![对话与快速提问](docs/screenshots/chat-and-settings.png) | ![设置页](docs/screenshots/settings.png) |
+| ![接口设置](docs/screenshots/settings-api.png) | ![快速提问设置](docs/screenshots/settings-quick-prompts.png) |
 
-清空对话时的「垃圾桶」动效（逐帧）：
+### 动效
 
-![清空动效逐帧](docs/screenshots/clear-animation-frames.png)
+| 清空对话：纸被吸进垃圾桶 | 收起成边缘竖条，移上去滑出「‹」「×」 |
+|---|---|
+| ![清空对话](docs/screenshots/clear-chat.gif) | ![收起成竖条](docs/screenshots/dock-collapse.gif) |
 
-收起成边缘竖条，鼠标移上去滑出「‹」展开 /「×」退出（真实 Safari 截图）：
+| 流式输出，随时「停止」 | 代码块一键复制 |
+|---|---|
+| ![流式输出与停止](docs/screenshots/streaming-stop.gif) | ![复制代码](docs/screenshots/copy-code.gif) |
 
-| 展开的对话框 | 点 ✕ 收成右边缘竖条 | 鼠标移上去滑出两个按钮 |
-|---|---|---|
-| ![展开的对话框](docs/screenshots/dock-open.png) | ![收起成竖条](docs/screenshots/dock-collapsed.png) | ![滑出展开和退出按钮](docs/screenshots/dock-hover.png) |
+| 拉宽对话框，更多快速提问被「拉」出来 | 展开快速提问菜单，进出设置页 |
+|---|---|
+| ![拉宽对话框](docs/screenshots/resize-panel.gif) | ![快速提问与设置](docs/screenshots/quick-prompts-settings.gif) |
 
 ## 安装（下载 dmg）
 
