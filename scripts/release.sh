@@ -72,7 +72,7 @@ fi
 
 # Build 号必须单调递增：用 git 提交数；没有 git 时用时间戳
 BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || date +%Y%m%d%H%M)
-echo "==> 版本 $CURRENT -> $VERSION（build $BUILD_NUMBER）"
+echo "==> 版本 ${CURRENT} -> ${VERSION}（build ${BUILD_NUMBER}）"
 
 # ---------- 2. 生成 Xcode 工程 ----------
 # 每次重新生成，这样新增/删除的扩展文件也会被带上。build/ 不进 git。
@@ -106,7 +106,7 @@ APP_PATH="$BUILD_DIR/derived/Build/Products/Release/${APP_NAME}.app"
 
 # 构建参数没生效时尽早发现
 BUILT_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")
-[[ "$BUILT_VERSION" == "$VERSION" ]] || { echo "App 版本是 $BUILT_VERSION，应为 $VERSION"; exit 1; }
+[[ "$BUILT_VERSION" == "$VERSION" ]] || { echo "App 版本是 ${BUILT_VERSION}，应为 ${VERSION}"; exit 1; }
 
 # ---------- 4. 打包 dmg 和 zip ----------
 DMG_PATH="$DIST_DIR/${APP_NAME}-${VERSION}.dmg"
