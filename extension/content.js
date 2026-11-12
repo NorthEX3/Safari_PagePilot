@@ -165,21 +165,32 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
 .fx-lid.back .icon{visibility:hidden}
 
 /* Minimised dock: a thin handle on the right edge of the page. Hover (or focus / tap) slides out two actions. */
-.dock{position:fixed;right:0;top:40%;width:92px;height:136px;margin-top:-68px;z-index:40;display:flex;align-items:stretch;pointer-events:auto;
-  transform:translateX(76px);transition:transform 200ms cubic-bezier(.37,0,.63,1);will-change:transform;
+.dock{position:fixed;right:0;top:0;width:88px;height:136px;z-index:40;display:flex;align-items:stretch;pointer-events:auto;
+  transform:translateX(72px);transition:transform 200ms cubic-bezier(.37,0,.63,1);will-change:transform;
   font-family:"Smartisan Compact","Inter",-apple-system,BlinkMacSystemFont,"Noto Sans CJK SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
 .dock[hidden]{display:none}
 .dock.open{transform:translateX(0)}
-.dock-body{flex:1;display:flex;align-items:stretch;background:linear-gradient(180deg,#fff,#f6f6f6);border:.8px solid #cfcfcf;border-right:0;border-radius:10px 0 0 10px;box-shadow:-3px 4px 14px rgba(0,0,0,.2);overflow:hidden}
-.dock-grip{flex:none;width:15px;display:grid;place-items:center;cursor:pointer}
+
+.dock-body{flex:1;position:relative;display:flex;align-items:stretch;background:linear-gradient(180deg,#fff,#f6f6f6);border:.8px solid #cfcfcf;border-right:0;border-radius:10px 0 0 10px;box-shadow:-3px 4px 14px rgba(0,0,0,.2);overflow:hidden}
+.dock-grip{position:absolute;left:0;top:0;bottom:0;width:15px;display:grid;place-items:center;cursor:grab;touch-action:none;transition:opacity 120ms ease}
+.dock.dragging .dock-grip{cursor:grabbing}
+.dock.open .dock-grip{opacity:0;pointer-events:none}
 .dock-grip::after{content:"";width:3px;height:40px;border-radius:2px;background:linear-gradient(180deg,#93b2f7,#6393ff)}
-.dock-actions{flex:1;display:flex;align-items:center;justify-content:space-around;border-left:.8px solid #ececec;opacity:0;transition:opacity 160ms ease 40ms}
+
+.dock-actions{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;place-items:center;opacity:0;transition:opacity 160ms ease 40ms}
+.dock-actions::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:.5px;background:#dcdcdc}   /* hairline divider (Smartisan: thin, light grey) */
 .dock.open .dock-actions{opacity:1;transition-delay:60ms}
-.dock-btn{all:unset;box-sizing:border-box;cursor:pointer;width:34px;height:34px;display:grid;place-items:center;color:#5b87eb;border-radius:50%;transition:transform 220ms cubic-bezier(.34,1.7,.6,1)}
-.dock-btn:active{transform:scale(1.3);color:#3f68e2}
-.dock-btn:focus-visible{outline:2px solid #5b87eb;outline-offset:1px}
-.dock-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-@media(prefers-reduced-motion:reduce){.dock,.dock-actions,.dock-btn{transition:none}}
+.dock-body{touch-action:none;user-select:none;-webkit-user-select:none}
+.dock-btn{all:unset;box-sizing:border-box;cursor:pointer;width:100%;height:100%;display:grid;place-items:center;color:#5b87eb;transition:background-color 120ms ease,color 120ms ease}
+.dock-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform 220ms cubic-bezier(.34,1.7,.6,1)}
+.dock-btn:active svg{transform:scale(1.3)}
+.dock-btn:active{color:#3f68e2}
+.dock-btn:focus-visible{outline:2px solid #5b87eb;outline-offset:-3px}
+/* the quit half turns Smartisan red on hover: white cross on a red slab (#e5645a -> #e55f55) */
+.dock-btn.quit:hover,.dock-btn.quit:focus-visible{color:#fff;background:linear-gradient(180deg,#e5645a,#e55f55)}
+.dock-btn.quit:active{color:#fff;background:#df4f46}
+.dock.dragging .dock-btn{pointer-events:none}
+@media(prefers-reduced-motion:reduce){.dock,.dock-actions,.dock-btn,.dock-btn svg{transition:none}}
 
 /* Settings page: slides in over the conversation (page-stack push, 300ms smooth) */
 .settings{position:absolute;left:0;right:0;top:48px;bottom:0;z-index:3;overflow-y:auto;padding:20px 12px 18px;background:repeating-linear-gradient(90deg,#f0f0f0 0 3.6px,#eee 3.6px 7.2px);transform:translateX(100%);visibility:hidden;transition:transform 300ms cubic-bezier(.37,0,.63,1),visibility 0s 300ms}
@@ -275,7 +286,7 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
     <span class="dock-grip" id="dockGrip" aria-hidden="true"></span>
     <div class="dock-actions">
       <button class="dock-btn" id="dockOpen" type="button" title="展开对话窗口" aria-label="展开对话窗口"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 3.5 6 10l6.5 6.5"/></svg></button>
-      <button class="dock-btn" id="dockQuit" type="button" title="退出" aria-label="退出 PagePilot"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg></button>
+      <button class="dock-btn quit" id="dockQuit" type="button" title="退出" aria-label="退出 PagePilot"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg></button>
     </div>
   </div>
 </div>`;
@@ -1424,7 +1435,7 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
     else if (event.key === "Home") { applyWidth(DEFAULT_W); saveWidth(); event.preventDefault(); }
     event.stopPropagation();
   });
-  const onWindowResize = () => applyWidth(panelWidth);   // the half-of-page limit follows the window
+  const onWindowResize = () => { applyWidth(panelWidth); placeDock(); };   // the half-of-page limit follows the window
   window.addEventListener("resize", onWindowResize);
 
   /* ------------------------------------------------------------------ minimise to a dock on the right edge */
@@ -1444,7 +1455,7 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
     if (typeof panel.animate === "function" && !REDUCED_MOTION()) {
       const a = panel.animate([{ transform: "none", opacity: 1 }, { transform: "translateX(36px)", opacity: 0 }], { duration: 200, easing: DOCK_EASE, fill: "forwards" });
       a.onfinish = () => { if (minimized) { panel.style.visibility = "hidden"; a.cancel(); } };
-      dock.animate([{ transform: "translateX(100px)" }, { transform: "translateX(76px)" }], { duration: 240, delay: 90, easing: DOCK_EASE, fill: "backwards" });
+      dock.animate([{ transform: "translateX(96px)" }, { transform: "translateX(72px)" }], { duration: 240, delay: 90, easing: DOCK_EASE, fill: "backwards" });
     } else panel.style.visibility = "hidden";
   }
   function restore() {
@@ -1456,7 +1467,7 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
     dock.classList.remove("open");
     if (typeof panel.animate === "function" && !REDUCED_MOTION()) {
       panel.animate([{ transform: "translateX(36px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 220, easing: DOCK_EASE });
-      const a = dock.animate([{ transform: "translateX(76px)" }, { transform: "translateX(100px)" }], { duration: 180, easing: DOCK_EASE, fill: "forwards" });
+      const a = dock.animate([{ transform: "translateX(72px)" }, { transform: "translateX(96px)" }], { duration: 180, easing: DOCK_EASE, fill: "forwards" });
       a.onfinish = () => { if (!minimized) { dock.hidden = true; a.cancel(); } };
     } else dock.hidden = true;
     question.focus({ preventScroll: true });
@@ -1465,7 +1476,40 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
   dock.addEventListener("pointerleave", () => closeDock(280));
   dock.addEventListener("focusin", openDock);
   dock.addEventListener("focusout", event => { if (!dock.contains(event.relatedTarget)) closeDock(120); });
-  $("#dockGrip").addEventListener("click", () => (dock.classList.contains("open") ? closeDock(0) : openDock()));   // touch: tap the handle
+  // the handle can be dragged up and down the edge; the position is remembered (as a fraction of the page height)
+  const DOCK_H = 136, DOCK_MARGIN = 8;
+  let dockY = 0.4, dockDrag = null;
+  const placeDock = () => { const top = Math.min(window.innerHeight - DOCK_H - DOCK_MARGIN, Math.max(DOCK_MARGIN, dockY * window.innerHeight - DOCK_H / 2)); dock.style.top = `${top}px`; return top; };
+  placeDock();
+  ext.storage.local.get(["dockY"]).then(d => { const v = Number(d && d.dockY); if (v > 0 && v < 1) { dockY = v; placeDock(); } }).catch(() => {});
+  const grip2 = $("#dockGrip"), dockBody = dock.querySelector(".dock-body");
+  // Press anywhere on the dock (buttons included) and move more than 4px = drag; press and release without moving = a normal
+  // click on whatever was under the pointer. The pointer is captured only once the drag starts, so clicks still reach the buttons.
+  dockBody.addEventListener("pointerdown", event => {
+    if (event.button !== 0) return;
+    const r = dock.getBoundingClientRect();
+    dockDrag = { id: event.pointerId, startY: event.clientY, offset: event.clientY - (r.top + r.height / 2), moved: false, onGrip: grip2.contains(event.target) || event.target === grip2 };
+    // follow the pointer on the window, so a fast drag that leaves the 136px-tall dock is not lost
+    window.addEventListener("pointermove", onDockMove, true); window.addEventListener("pointerup", endDockDrag, true); window.addEventListener("pointercancel", endDockDrag, true);
+  });
+  const onDockMove = event => {
+    if (!dockDrag || event.pointerId !== dockDrag.id) return;
+    if (!dockDrag.moved) {
+      if (Math.abs(event.clientY - dockDrag.startY) < 4) return;                       // a tap is not a drag
+      dockDrag.moved = true;
+      dock.classList.add("dragging");
+    }
+    dockY = (event.clientY - dockDrag.offset) / window.innerHeight;
+    dockY = (placeDock() + DOCK_H / 2) / window.innerHeight;                            // keep the clamped position
+  };
+  const endDockDrag = event => {
+    if (!dockDrag || (event && event.pointerId !== dockDrag.id)) return;
+    const { moved, onGrip } = dockDrag; dockDrag = null;
+    window.removeEventListener("pointermove", onDockMove, true); window.removeEventListener("pointerup", endDockDrag, true); window.removeEventListener("pointercancel", endDockDrag, true);
+    dock.classList.remove("dragging");
+    if (moved) { try { ext.storage.local.set({ dockY }); } catch { /* ignore */ } }
+    else if (onGrip) (dock.classList.contains("open") ? closeDock(0) : openDock());   // touch: tap the handle to show the actions
+  };
   $("#dockOpen").addEventListener("click", restore);
   $("#dockQuit").addEventListener("click", () => close());
   host.addEventListener("pagepilot-toggle", event => { event.preventDefault(); if (minimized) restore(); else close(); });
