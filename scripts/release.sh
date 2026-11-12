@@ -128,6 +128,10 @@ hdiutil create -volname "${APP_NAME} ${VERSION}" -srcfolder "$STAGE" \
 echo "==> 生成 zip ..."
 ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"   # 必须用 ditto，普通 zip 会破坏签名
 
+# 删除构建目录：里面的 .app 副本会被 Spotlight 索引，Safari 会多出重复的扩展
+"$LSREGISTER" -u "$STAGE/${APP_NAME}.app" >/dev/null 2>&1 || true
+rm -rf "$BUILD_DIR"
+
 echo ""
 echo "✅ 完成 v${VERSION}"
 echo "   $DMG_PATH"
