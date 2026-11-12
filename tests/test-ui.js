@@ -481,6 +481,39 @@ const INIT = () => {
   assert.ok(edge >= 13, "gap " + edge); ok("the conversation's scroll edge sits " + edge.toFixed(0) + "px under the quick-question row (was 4px)");
   await page.keyboard.press("Escape"); await page.evaluate(() => { window.__store = { apiKey: "sk-x", baseUrl: "https://api.deepseek.com", model: "deepseek-chat" }; });
 
+  // ✕ minimises to a dock on the right edge; hover shows two actions: reopen (‹) and quit (✕)
+  await page.evaluate(() => { window.__store = { apiKey: "sk-x", baseUrl: "https://api.deepseek.com", model: "deepseek-chat" }; });
+  await inject(); await page.waitForFunction(() => window.__shadow.querySelector("#dock"));
+  await page.evaluate(() => { const chat = window.__shadow.querySelector("#chat"); const m = document.createElement("div"); m.className = "msg user"; m.id = "keepme"; m.textContent = "收起之后还在"; chat.append(m); });
+  const state = () => page.evaluate(() => { const s = window.__shadow, p = s.querySelector("#panel"), d = s.querySelector("#dock"), h = document.getElementById("pagepilot-safari-root"), dr = d.getBoundingClientRect(); return { host: !!h, panelHidden: p.style.visibility === "hidden", inert: p.inert, dockHidden: d.hidden, open: d.classList.contains("open"), dockLeft: Math.round(dr.left), dockRight: Math.round(dr.right), dockTop: Math.round(dr.top), dockH: Math.round(dr.height), hostEvents: h && getComputedStyle(h).pointerEvents, kept: !!s.querySelector("#keepme") }; });
+  await click("#close"); await page.waitForTimeout(450);
+  let st = await state();
+  assert.ok(st.host && st.panelHidden && st.inert && !st.dockHidden && !st.open && st.hostEvents === "none" && st.kept, JSON.stringify(st)); ok("✕ no longer quits: the panel is tucked away (state kept) and the page below is clickable again");
+  assert.ok(st.dockLeft === 1280 - 16 && st.dockRight - st.dockLeft === 92 && st.dockH === 136, JSON.stringify(st)); ok("a thin 16px handle sits on the right edge of the page (136px tall)");
+  assert.equal(await page.evaluate(() => { const e = document.elementFromPoint(900, 400); return e && e.id !== "pagepilot-safari-root"; }), true); ok("clicks where the panel used to be reach the page, not the hidden panel");
+  await page.mouse.move(1273, st.dockTop + 60); await page.waitForTimeout(350);
+  st = await state();
+  assert.ok(st.open && st.dockLeft === 1280 - 92, JSON.stringify(st)); ok("hovering the handle slides the dock out (92px wide) with two actions");
+  const acts = await page.evaluate(() => { const s = window.__shadow, a = s.querySelector("#dockOpen").getBoundingClientRect(), b = s.querySelector("#dockQuit").getBoundingClientRect(); return { open: [a.left, a.right], quit: [b.left, b.right], titleA: s.querySelector("#dockOpen").getAttribute("aria-label"), titleB: s.querySelector("#dockQuit").getAttribute("aria-label"), inView: a.left >= 0 && b.right <= 1280 }; });
+  assert.ok(acts.open[1] <= acts.quit[0] + 1 && acts.inView && acts.titleA === "展开对话窗口" && acts.titleB === "退出 PagePilot", JSON.stringify(acts)); ok("‹ (reopen the chat window) on the left, ✕ (quit) on the right");
+  await page.mouse.move(600, 300); await page.waitForTimeout(600);
+  assert.equal((await state()).open, false); ok("moving away slides it back to the thin handle");
+  await page.mouse.move(1273, st.dockTop + 60); await page.waitForTimeout(350);
+  await click("#dockOpen"); await page.waitForTimeout(400);
+  st = await state();
+  assert.ok(st.host && !st.panelHidden && !st.inert && st.hostEvents !== "none" && st.kept, JSON.stringify(st)); ok("‹ brings the chat window back exactly as it was (conversation kept)");
+  await page.waitForFunction(() => window.__shadow.querySelector("#dock").hidden === true); ok("and the dock goes away");
+  await click("#close"); await page.waitForTimeout(400);
+  await page.keyboard.press("Escape"); await page.waitForTimeout(100);
+  assert.equal(await page.locator("#pagepilot-safari-root").count(), 1); ok("Esc on the page does nothing while minimised");
+  await inject(); await page.waitForTimeout(400);
+  st = await state(); assert.ok(st.host && !st.panelHidden); ok("the toolbar icon (re-running the script) restores a minimised panel instead of removing it");
+  await click("#close"); await page.waitForTimeout(400);
+  await page.mouse.move(1273, (await state()).dockTop + 60); await page.waitForTimeout(350);
+  await click("#dockQuit");
+  assert.equal(await page.locator("#pagepilot-safari-root").count(), 0); ok("the dock's ✕ really quits (panel and dock removed)");
+  await page.evaluate(() => { window.__store = { apiKey: "sk-x", baseUrl: "https://api.deepseek.com", model: "deepseek-chat" }; });
+
   // narrow viewport
   await page.setViewportSize({ width: 375, height: 700 }); await inject();
   const w = await page.evaluate(() => document.getElementById("pagepilot-safari-root").getBoundingClientRect().width);
