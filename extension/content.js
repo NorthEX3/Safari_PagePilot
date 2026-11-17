@@ -118,6 +118,13 @@ svg{display:block}
 .md h1{font-size:17px}.md h2{font-size:16px}.md h3,.md h4{font-size:15px}
 .md ul,.md ol{margin:.5em 0;padding-left:1.5em}.md li{margin:.2em 0}
 .md blockquote{margin:.6em 0;padding:.1em 0 .1em 11px;border-left:3px solid #d8d8d8;color:var(--ink2)}
+.tablewrap{margin:.7em 0;overflow-x:auto;border:.8px solid var(--line);border-radius:6px;background:#fff}
+.md table{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.5}
+.md th,.md td{padding:6px 10px;text-align:left;vertical-align:top;border-bottom:.5px solid #e9e9e9;border-right:.5px solid #eee}
+.md th{font-weight:700;color:var(--ink);white-space:nowrap;background:linear-gradient(180deg,#fafafa,#f2f2f2);border-bottom:.8px solid var(--line)}
+.md th:last-child,.md td:last-child{border-right:0}
+.md tbody tr:last-child td{border-bottom:0}
+.md td code,.md th code{font-size:11.5px}
 .md hr{border:0;height:.8px;background:var(--line);margin:.9em 0}
 .md a{color:#5079d9;text-decoration:none;border-bottom:.8px solid #93b2f7}
 .md code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;background:#f2f2f2;border:.5px solid #e2e2e2;border-radius:4px;padding:1px 5px;color:#444}
@@ -361,11 +368,39 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
     return box;
   }
 
+  /* GitHub-style tables: header row, a |---|:--:| separator row, then body rows. Also repairs a table the model squeezed onto one line
+     ("| a | b | |---|---| | 1 | 2 |"): rows are then separated by an empty cell. */
+  const SEP_CELL = /^:?-+:?$/;
+  const splitRow = line => line.trim().replace(/^\|/, "").replace(/\|$/, "").replace(/\\\|/g, "\u0001").split("|").map(s => s.trim().replace(/\u0001/g, "|"));
+  const isSepRow = line => /\|/.test(line) && splitRow(line).every(s => SEP_CELL.test(s));
+  function flatTable(line) {                                  // one-line table -> array of rows, or null
+    if (!/^\s*\|.*\|\s*$/.test(line) || !/\|\s*:?-{3,}:?\s*\|/.test(line)) return null;
+    const tokens = line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(s => s.trim());
+    const rows = [[]];
+    for (const t of tokens) { if (t === "" && rows[rows.length - 1].length) rows.push([]); else if (t !== "") rows[rows.length - 1].push(t); }
+    if (rows[rows.length - 1].length === 0) rows.pop();
+    if (rows.length < 3 || !rows[1].every(s => SEP_CELL.test(s))) return null;
+    const n = rows[1].length;
+    return rows.every(r => r.length === n) ? rows : null;
+  }
+  function tableBox(rows) {                                   // rows[0] = header, rows[1] = separator, rest = body
+    const aligns = rows[1].map(s => (/^:-*:$/.test(s) ? "center" : /-:$/.test(s) ? "right" : /^:-/.test(s) ? "left" : ""));
+    const wrap = el("div", "tablewrap"), table = el("table");
+    const fill = (tr, cells, tag) => {
+      for (let k = 0; k < aligns.length; k++) { const cell = el(tag); if (aligns[k]) cell.style.textAlign = aligns[k]; inline(cell, cells[k] || ""); tr.append(cell); }
+    };
+    const thead = el("thead"), htr = el("tr"); fill(htr, rows[0], "th"); thead.append(htr); table.append(thead);
+    const tbody = el("tbody");
+    for (let r = 2; r < rows.length; r++) { const tr = el("tr"); fill(tr, rows[r], "td"); tbody.append(tr); }
+    table.append(tbody); wrap.append(table);
+    return wrap;
+  }
+
   function renderMarkdown(source) {
     const root = el("div", "md");
     const lines = String(source).replace(/\r\n?/g, "\n").split("\n");
     let i = 0;
-    const isBlockStart = l => /^(#{1,4}\s|```|>\s?|\s*[-*+]\s+|\s*\d+[.)]\s+|---+\s*$)/.test(l);
+    const isBlockStart = l => /^(#{1,4}\s|```|>\s?|\s*[-*+]\s+|\s*\d+[.)]\s+|---+\s*$|\s*\|.*\|\s*$)/.test(l);
     while (i < lines.length) {
       const line = lines[i];
       if (!line.trim()) { i++; continue; }
@@ -376,6 +411,15 @@ textarea::placeholder{color:#c4c4c4}textarea:focus{border-color:#93b2f7}
         i++; // closing fence (or end of a still-streaming block)
         root.append(codeBox(fence[1], buf.join("\n")));
         continue;
+      }
+      if (/^\s*\|/.test(line)) {
+        const flat = flatTable(line);
+        if (flat) { root.append(tableBox(flat)); i++; continue; }
+        if (i + 1 < lines.length && isSepRow(lines[i + 1])) {
+          const rows = [splitRow(line), splitRow(lines[i + 1])]; i += 2;
+          while (i < lines.length && /^\s*\|/.test(lines[i]) && lines[i].trim()) rows.push(splitRow(lines[i++]));
+          root.append(tableBox(rows)); continue;
+        }
       }
       const h = line.match(/^(#{1,4})\s+(.*)$/);
       if (h) { const n = el("h" + h[1].length); inline(n, h[2]); root.append(n); i++; continue; }

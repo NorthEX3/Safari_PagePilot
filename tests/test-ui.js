@@ -22,7 +22,7 @@ const INIT = () => {
         if (window.__script === "error") return setTimeout(() => emit({ type: "error", error: "API Key 无效或已失效，请重新检查。" }), 10);
         if (window.__script === "slow") return setTimeout(() => { emit({ type: "delta", text: "好的" }); setTimeout(() => emit({ type: "done" }), 3500); }, 400);
         if (window.__script === "hang") { emit({ type: "delta", text: "部分" }); return; }
-        const text = "## 总结\n这是 **重点**，参见 [文档](https://example.com) 与 [坏链接](javascript:alert(1))。\n\n- 第一项 `flex`\n- 第二项\n\n```css\n.a { display: flex; }\n```\n\n<img src=x onerror=\"window.__xss=1\"><script>window.__xss=1<\/script>";
+        const text = "## 总结\n这是 **重点**，参见 [文档](https://example.com) 与 [坏链接](javascript:alert(1))。\n\n- 第一项 `flex`\n- 第二项\n\n```css\n.a { display: flex; }\n```\n\n| 属性 | 回答的问题 | 值 |\n|:--|:-:|--:|\n| `href` | 去哪里？ | a\\|b |\n| src | 加载什么 | 2 |\n\n| 属性 | 回答的问题 | | --- | --- | | href | 去哪里？ |\n\n<img src=x onerror=\"window.__xss=1\"><script>window.__xss=1<\/script>";
         let i = 0; const step = () => { if (i < text.length) { emit({ type: "delta", text: text.slice(i, i += 7) }); setTimeout(step, 4); } else emit({ type: "done" }); }; setTimeout(step, 10);
       } };
     return port;
@@ -85,6 +85,10 @@ const INIT = () => {
   assert.equal(await page.evaluate(() => !!window.__xss || !!window.__shadow.querySelector("img,script")), false); ok("no HTML injection from model output");
   assert.match(await q(".msg.assistant"), /window\.__xss=1/); ok("underscores in identifiers are left alone");
   assert.equal(await q(".codebox pre"), ".a { display: flex; }"); ok("fenced code block");
+  const tb = await page.evaluate(() => [...window.__shadow.querySelectorAll(".msg.assistant table")].map(t => ({ th: [...t.querySelectorAll("th")].map(x => x.textContent), td: [...t.querySelectorAll("td")].map(x => x.textContent), al: [...t.querySelectorAll("tbody tr:first-child td")].map(x => x.style.textAlign), code: t.querySelectorAll("td code").length, border: getComputedStyle(t.querySelector("td")).borderBottomWidth })));
+  assert.equal(tb.length, 2, JSON.stringify(tb));
+  assert.deepEqual(tb[0].th, ["属性", "回答的问题", "值"]); assert.deepEqual(tb[0].td, ["href", "去哪里？", "a|b", "src", "加载什么", "2"]); assert.deepEqual(tb[0].al, ["left", "center", "right"]); assert.equal(tb[0].code, 1); ok("markdown table: header, rows, alignment, inline code, escaped pipe");
+  assert.deepEqual(tb[1].th, ["属性", "回答的问题"]); assert.deepEqual(tb[1].td, ["href", "去哪里？"]); ok("a table squeezed onto one line is repaired into a real table");
   await page.screenshot({ path: path.join(root, "tests/ui-chat.png") });
 
   // copy button
